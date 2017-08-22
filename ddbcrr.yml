@@ -150,6 +150,8 @@ Resources:
         Fn::Base64: !Sub |
           #!/bin/bash
           yum update -y
+          aws s3 cp s3://${JarBucket}/dynamodb-cross-region-replication-1.2.1.jar .
+          java -jar dynamodb-cross-region-replication-1.2.1.jar  --sourceRegion ${SourceRegion} --destinationTable ${DestTable} --destinationRegion ${DestRegion} --sourceTable ${SourceTable}&
 
   EcsInstanceAsg:
     Type: AWS::AutoScaling::AutoScalingGroup
