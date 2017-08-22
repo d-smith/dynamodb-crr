@@ -17,6 +17,48 @@ Parameters:
   DestRegion:
     Type: String
     Default: us-west-2
+  VpcId:
+    Type: String
+    Description: VPC in which the instance is to be placed
+  SubnetId: 
+    Type: String
+    Description: Subnet to place instance in
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+
+  InstanceType:
+    Description: EC2 instance type
+    Type: String
+    Default: t2.micro
+    AllowedValues: [t2.micro, t2.small, t2.medium, t2.large, m3.medium, m3.large,
+      m3.xlarge, m3.2xlarge, m4.large, m4.xlarge, m4.2xlarge, m4.4xlarge, m4.10xlarge,
+      c4.large, c4.xlarge, c4.2xlarge, c4.4xlarge, c4.8xlarge, c3.large, c3.xlarge,
+      c3.2xlarge, c3.4xlarge, c3.8xlarge, r3.large, r3.xlarge, r3.2xlarge, r3.4xlarge,
+      r3.8xlarge, i2.xlarge, i2.2xlarge, i2.4xlarge, i2.8xlarge]
+    ConstraintDescription: Please choose a valid instance type.
+
+Mappings:
+  AWSRegionToAMI:
+    us-east-1:
+      AMIID: ami-a4c7edb2
+    us-east-2:
+      AMIID: ami-8a7859ef
+    us-west-1:
+      AMIID: ami-327f5352
+    us-west-2:
+      AMIID: ami-6df1e514
+    eu-west-1:
+      AMIID: ami-d7b9a2b1
+    eu-west-2:
+      AMIID: ami-ed100689
+    eu-central-1:
+      AMIID: ami-82be18ed
+    ap-northeast-1:
+      AMIID: ami-3bd3c45c
+    ap-southeast-1:
+      AMIID: ami-77af2014
+    ap-southeast-2:
+      AMIID: ami-10918173
 
 Resources:
 
@@ -36,7 +78,9 @@ Resources:
           Statement:
           - Effect: Allow
             Action: ['s3:GetObject','s3:ListObjects','s3:ListBucket']
-            Resource: !Join ['', ['arn:aws:s3:::', !Ref 'JarBucket']]
+            Resource: 
+            - !Join ['', ['arn:aws:s3:::', !Ref 'JarBucket']]
+            - !Join ['', ['arn:aws:s3:::', !Ref 'JarBucket', '/*']]
       - PolicyName: metrics
         PolicyDocument:
           Statement:
@@ -71,8 +115,57 @@ Resources:
       Roles:
       - !Ref DDBReplicatorRole
 
+  JumpBoxSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: bastion host/jump box sg
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
+        CidrIp: 0.0.0.0/0
 
-Outputs:
+  ReplicationInstanceSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: security group that allows ssh ingress from jump box
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
+        SourceSecurityGroupId: !Ref JumpBoxSG
 
-  DDBReplicatorRoleArn:
-    Value: !GetAtt DDBReplicatorRole.Arn
+  ReplInstanceLaunchConfig:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      ImageId: !FindInMap [AWSRegionToAMI, !Ref 'AWS::Region', AMIID]
+      InstanceType: !Ref InstanceType
+      AssociatePublicIpAddress: true
+      IamInstanceProfile: !Ref ReplRunnerProfile
+      KeyName: !Ref KeyName
+      SecurityGroups: [ !Ref ReplicationInstanceSG ]
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum update -y
+
+  EcsInstanceAsg:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      VPCZoneIdentifier:
+      - !Ref SubnetId
+      LaunchConfigurationName: !Ref ReplInstanceLaunchConfig
+      MinSize: '1'
+      MaxSize: '1'
+      DesiredCapacity: '1'
+      Tags:
+        -
+          Key: Name
+          Value: !Sub "Replicator Instance - ${AWS::StackName}"
+          PropagateAtLaunch: 'true'
+
+
+
+
