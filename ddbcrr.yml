@@ -18,10 +18,10 @@ Parameters:
     Type: String
     Default: us-west-2
   VpcId:
-    Type: String
+    Type: AWS::EC2::VPC::Id
     Description: VPC in which the instance is to be placed
   SubnetId: 
-    Type: String
+    Type: AWS::EC2::Subnet::Id
     Description: Subnet to place instance in
   KeyName:
     Type: AWS::EC2::KeyPair::KeyName
