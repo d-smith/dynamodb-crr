@@ -1,6 +1,6 @@
 # ecs replicator
 
-This directory provides a Makefile to build a container that can run
+This project provides a Makefile to build a container that can run
 the [dynamodb-cross-region-library](https://github.com/awslabs/dynamodb-cross-region-library) process, and
 a cloud formation to create a production like set up for running the 
 replicator.
