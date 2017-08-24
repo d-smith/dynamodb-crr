@@ -1,35 +1,26 @@
-# dynamodb cross region replication
+# ecs replicator
 
-This project provides cloud formation for deploying dynamodb cross region
-replication for a source table to destination table replication
-scenario.
+This directory provides a Makefile to build a container that can run
+the [dynamodb-cross-region-library](https://github.com/awslabs/dynamodb-cross-region-library) process, and
+a cloud formation to create a production like set up for running the 
+replicator.
 
-The project assumes the use of the [dynamodb-cross-region-library](https://github.com/awslabs/dynamodb-cross-region-library), and provides
-some glue to deploy and run the library on an EC2 instance:
+The ECS cluster spans two availability zones in a region to provide for
+some redundancy (add more zones to suit your comfort level as needed),
+and is configured to autolaunch the replicator container if a host or container fails.
 
-To use the template, follow the instructions in the dynamodb-cross-region-library project to create the 
-cross region replication jar. Put the jar in a bucket then instantiate
-the cloud formation template.
+To instantiate the template, create an s3 bucket to contain the cloud
+formation templates, and use `stage-files.sh` to stage the assets. Then,
+deploy the stack using `deploy-stack.sh`
 
 Parameters:
 
-* DestRegion - Region containing the DynamoDB table being replicated to.
-* DestTable - DynamoDB replication target table
-* InstanceType - EC2 instance type  
-* JarBucket - bucket containing the replicator jar as described above
-* KeyName - EC2 KeyPair name the replicator instance is launched with
-* SourceRegion - Region containing the source table
+Here's minimum set of parameters to deploy the stack, assuming the use
+of defaults. Review the parameters in `replicator.yml` for additional
+parameters and their default values.
+
+* BucketRoot - Endpoint path to the staging bucket root, for example something like https://s3.amazonaws.com/foo
+* KeyName -  Name of the key pair the ECS cluster instances are launched with
 * SourceTable - Source of replicated data
-* SubnetId - Subnet to run the instance in
-* VpcId - VPC containing the subnet
-
-Hints:
-
-* Run the replicator in a private subnet. You will only ever need to log into
-the replicator instance to troubleshoot or look at the logs.
-* Use a jump box/bastion host to access the replicator. Launch the jump box
-in a public subnet using the jump box security group that is created with the stack - this will grant you ingress to the replicator instance.
-
-TODO:
-
-* Forward the logs to sumo or cloud watch
+* DestTable - DynamoDB replication target table
+* ClusterName - Name to use for the ECS cluster created by the stack
