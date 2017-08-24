@@ -86,3 +86,14 @@ Resources:
         PrivateSubnet2: !GetAtt VPC.Outputs.PrivateSubnet2
         VpcId: !GetAtt VPC.Outputs.VpcId
         IngressSecurityGroup: !GetAtt VPC.Outputs.SSHIngressSecurityGroup
+
+  ReplicatorSvc:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Join ['/', [!Ref BucketRoot, replservice.yml]]
+      Parameters:
+        SourceRegion: !Ref SourceRegion
+        SourceTable: !Ref SourceTable
+        DestRegion: !Ref DestRegion
+        DestTable: !Ref DestTable
+        ECSCluster: !GetAtt ECS.Outputs.ECSCluster
