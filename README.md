@@ -24,3 +24,10 @@ parameters and their default values.
 * SourceTable - Source of replicated data
 * DestTable - DynamoDB replication target table
 * ClusterName - Name to use for the ECS cluster created by the stack
+
+
+Memory and CPU:
+
+When running this at load I needed to boost the memory hard limit to 2048 and I set
+the CPU limit to 1024. Prior to making this change to the task definition I observed the
+container crashing/dying/being-murdered.

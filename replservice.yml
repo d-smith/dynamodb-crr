@@ -32,8 +32,8 @@ Resources:
         -
           Name: dynamodbcrr
           Image: xtracdev/dynamodbcrr
-          Memory: 256
-          Cpu: 256
+          Memory: 2048
+          Cpu: 1024
           Command: 
             - --sourceRegion
             - !Sub ${SourceRegion} 
